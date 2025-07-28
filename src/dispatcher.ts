@@ -21,6 +21,7 @@ async function emitEvent(runId: string, type: string, data: any){
 }
 
 async function executeStep(runId: string, step: ActionStep, llm: LLMClient, brief: ResearchBrief){
+  logger.info('step start', { runId, stepId: step.id, action: step.action });
   await emitEvent(runId, 'step_start', { stepId: step.id, action: step.action, agent: step.agent });
   switch(step.action){
     case 'SEARCH': {
@@ -53,6 +54,7 @@ async function executeStep(runId: string, step: ActionStep, llm: LLMClient, brie
       const artifactPath = await runStorage.saveArtifact(runId, `${step.id}-results.json`, results);
       await emitEvent(runId, 'artifact', { stepId: step.id, path: artifactPath });
       await emitEvent(runId, 'stats', { stepId: step.id, count: results.length });
+      logger.debug('search results', { stepId: step.id, count: results.length });
       break;
     }
     case 'SCREEN': {
@@ -69,6 +71,7 @@ async function executeStep(runId: string, step: ActionStep, llm: LLMClient, brie
       const artifactPath = await runStorage.saveArtifact(runId, 'screened-evidence.json', screened);
       await emitEvent(runId, 'artifact', { stepId: step.id, path: artifactPath });
       await emitEvent(runId, 'stats', { stepId: step.id, count: screened.length });
+      logger.debug('screened count', { stepId: step.id, count: screened.length });
       break;
     }
     case 'SYNTHESISE': {
@@ -76,6 +79,7 @@ async function executeStep(runId: string, step: ActionStep, llm: LLMClient, brie
       const output = await generateReport(runId, llm, Array.isArray(ev)?ev:[]);
       const artifactPath = await runStorage.saveArtifact(runId, 'final-report.json', output);
       await emitEvent(runId, 'artifact', { stepId: step.id, path: artifactPath });
+      logger.info('report generated', { runId });
       break;
     }
     default:
@@ -86,6 +90,7 @@ async function executeStep(runId: string, step: ActionStep, llm: LLMClient, brie
 export async function startExecution(runId: string, plan: ExecutionPlan, llm: LLMClient, brief?: ResearchBrief){
   await runStorage.create(runId);
   await emitEvent(runId, 'phase', { phase: 'start' });
+  logger.info('execution started', { runId });
   try {
     for (const step of plan.steps){
       try {
@@ -97,6 +102,7 @@ export async function startExecution(runId: string, plan: ExecutionPlan, llm: LL
       }
     }
     await emitEvent(runId, 'complete', { ok: true });
+    logger.info('execution complete', { runId });
   } catch (e:any) {
     await emitEvent(runId, 'error', { message: String(e) });
     await emitEvent(runId, 'complete', { ok: false });

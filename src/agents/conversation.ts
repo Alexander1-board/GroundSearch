@@ -4,6 +4,7 @@ import { appendMessage, getMessages } from '../lib/chat-storage.js';
 import { LLMClient } from '../types/llm.js';
 import { getLLM } from '../providers/registry.js';
 import { INTERVIEW_PROMPT } from '../spec/prompts.js';
+import { logger } from '../lib/logger.js';
 
 export async function startSession(llm?: LLMClient){
   const cfg = await loadConfig();
@@ -13,6 +14,7 @@ export async function startSession(llm?: LLMClient){
   await appendMessage(sessionId, first);
   // Persist provider info for the session (not used yet)
   await appendMessage(sessionId, { role: 'meta', content: JSON.stringify({ provider: client.provider, model: client.model }) });
+  logger.info('chat session started', { sessionId, provider: client.provider });
   return { sessionId, firstMessage: first };
 }
 
@@ -25,5 +27,6 @@ export async function replySession(sessionId: string, userMsg: string, llm?: LLM
   const outline = transcript.length > 3 ? { objective: transcript[1]?.content || 'Research objective' } : undefined;
   const reply = { role: 'assistant', content: 'Acknowledged.' };
   await appendMessage(sessionId, reply);
+  logger.debug('chat reply', { sessionId, len: transcript.length });
   return { reply, outline };
 }

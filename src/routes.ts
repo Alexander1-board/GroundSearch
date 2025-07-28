@@ -14,6 +14,7 @@ import { getMessages } from './lib/chat-storage.js';
 import * as runStorage from './lib/run-storage.js';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { logger } from './lib/logger.js';
 
 export const apiRouter = Router();
 
@@ -86,6 +87,7 @@ apiRouter.post('/agent/start', async (req: Request, res: Response, next: NextFun
     const llm = getLLM(cfg.default_provider as any, model || cfg.default_model);
     const plan = await createExecutionPlan(validated, llm);
     await runStorage.create(runId);
+    logger.info('run created', { runId });
     await runStorage.saveArtifact(runId, 'execution-plan.json', plan);
     // Start async
     startExecution(runId, plan, llm, validated).catch(()=>{});
@@ -96,6 +98,7 @@ apiRouter.post('/agent/start', async (req: Request, res: Response, next: NextFun
 apiRouter.get('/agent/:runId/stream', async (req: Request, res: Response, next: NextFunction) => {
   try{
     const { runId } = req.params;
+    logger.info('sse connect', { runId });
     res.writeHead(200, { 'Content-Type':'text/event-stream', 'Cache-Control':'no-cache', 'Connection':'keep-alive' });
     // replay
     const past = await runStorage.getEvents(runId);
@@ -106,7 +109,7 @@ apiRouter.get('/agent/:runId/stream', async (req: Request, res: Response, next: 
     const ka = setInterval(()=>res.write(':\n\n'), 15000);
     const handler = (evt: any)=>{ res.write(`event: ${evt.type}\n`); res.write(`data: ${JSON.stringify(evt)}\n\n`); };
     eventEmitter.on(runId, handler);
-    req.on('close', ()=>{ clearInterval(ka); eventEmitter.off(runId, handler); });
+    req.on('close', ()=>{ clearInterval(ka); eventEmitter.off(runId, handler); logger.info('sse disconnect', { runId }); });
   }catch(e){ next(e); }
 });
 

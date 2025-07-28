@@ -30,7 +30,7 @@ This project is a minimal, working TypeScript/Node scaffold for AutoResearch, a 
     ```bash
     npm run dev
     ```
-    The API server will start on `http://localhost:3000` (or the port specified in your `.env` file). All run data will be persisted to the `./runs` directory.
+    The API server will start on `http://localhost:3000` (or the port specified in your `.env` file). All run data will be persisted to the `./runs` directory. Visit `http://localhost:3000/` for a minimal UI showing recent runs.
 
 4.  **Run tests:**
     ```bash
