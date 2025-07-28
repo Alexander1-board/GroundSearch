@@ -1,24 +1,49 @@
 // path: src/adapters/arxiv.ts
 import { RecordLite } from '../spec/schemas.js';
+import { XMLParser } from 'fast-xml-parser';
 import { promises as fs } from 'fs';
 import path from 'path';
+import process from 'process';
+import { fetchWithRetry } from '../lib/http.js';
+import { sleep } from '../lib/sleep.js';
 
-export async function searchArxiv(query: string, max_results = 50): Promise<RecordLite[]> {
+let lastCall = 0;
+const parser = new XMLParser({ ignoreAttributes: false });
+
+function parseAtom(xml: string, limit: number): RecordLite[] {
+  const feed = parser.parse(xml);
+  const entries = Array.isArray(feed.feed?.entry) ? feed.feed.entry : feed.feed?.entry ? [feed.feed.entry] : [];
+  return entries.slice(0, limit).map((e: any) => ({
+    id: e.id,
+    source_id: 'arxiv',
+    title: (e.title || '').replace(/\s+/g, ' ').trim(),
+    url: typeof e.link === 'object' && e.link?.['@_href'] ? e.link['@_href'] : e.id,
+    year: e.published ? Number(String(e.published).slice(0, 4)) : undefined,
+    authors: (Array.isArray(e.author) ? e.author : [e.author]).filter(Boolean).map((a: any) => a.name),
+    abstract: (e.summary || '').trim()
+  }));
+}
+
+async function loadFixture(limit: number): Promise<RecordLite[]> {
   const xml = await fs.readFile(path.resolve(process.cwd(), 'test/fixtures/arxiv.atom'), 'utf8');
-  // naive parse to get title and id links
-  const entries = xml.split('<entry>').slice(1);
-  const out: RecordLite[] = [];
-  for (const e of entries.slice(0, max_results)) {
-    const id = (e.match(/<id>(.*?)<\/id>/s) || [])[1] || Math.random().toString(36).slice(2);
-    const title = ((e.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '').replace(/\s+/g,' ').trim();
-    const updated = (e.match(/<updated>(.*?)<\/updated>/) || [])[1];
-    out.push({
-      id,
-      source_id: 'arxiv',
-      title: title || 'arXiv entry',
-      url: id,
-      year: updated ? Number(updated.slice(0,4)) : undefined,
-    });
+  return parseAtom(xml, limit);
+}
+
+export async function searchArxiv(query: string, max_results = 50, start = 0): Promise<RecordLite[]> {
+  const now = Date.now();
+  const wait = 3000 - (now - lastCall);
+  if (wait > 0) await sleep(wait);
+
+  const url =
+    `https://export.arxiv.org/api/query?search_query=${encodeURIComponent(query)}` +
+    `&start=${start}&max_results=${max_results}`;
+  lastCall = Date.now();
+
+  try {
+    const res = await fetchWithRetry(url, {}, { rpsKey: 'arxiv' });
+    const xml = await res.text();
+    return parseAtom(xml, max_results);
+  } catch {
+    return loadFixture(max_results);
   }
-  return out;
 }

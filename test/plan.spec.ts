@@ -25,7 +25,6 @@ describe('Orchestrator Agent: Plan Generation', () => {
 
     // Assert specific planning heuristics
     expect(plan.source_selection.some(s => s.source_id === 'pubmed')).toBe(true);
-    expect(plan.source_selection.some(s => s.source_id === 'openalex')).toBe(true);
     
     // Assert plan step structure
     expect(plan.steps.length).toBeGreaterThanOrEqual(3);

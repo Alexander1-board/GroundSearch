@@ -1,5 +1,5 @@
 // path: test/smoke.spec.ts
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import supertest from 'supertest';
 import app from '../src/server.js';
 import { ResearchBriefSchema } from '../src/spec/schemas.js';
@@ -54,17 +54,45 @@ describe('API Smoke Test', () => {
         const response = await request
             .post('/api/agent/start')
             .send({ brief, model: 'gemini-2.5-flash' })
-            .expect(202);
+            .expect(200);
 
         expect(response.body).toHaveProperty('runId');
         expect(response.body.runId).toBeTypeOf('string');
         runId = response.body.runId;
     });
     
-    it('should complete the run successfully using file-based storage', async () => {
+    it('should complete the run successfully using file-based storage and SSE', async () => {
         expect(runId).toBeDefined();
-        const completed = await waitForRunCompletion(runId);
+        const events: any[] = [];
+        const stream = await fetch(`http://localhost:3000/api/agent/${runId}/stream`);
+        const reader = stream.body!.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        const readLoop = async () => {
+            while(true){
+                const {value, done} = await reader.read();
+                if(done) break;
+                buf += decoder.decode(value, {stream:true});
+                let idx;
+                while((idx = buf.indexOf('\n\n')) >= 0){
+                    const chunk = buf.slice(0, idx); buf = buf.slice(idx+2);
+                    const typeLine = chunk.split('\n').find(l=>l.startsWith('event:'));
+                    const dataLine = chunk.split('\n').find(l=>l.startsWith('data:'));
+                    if(dataLine){
+                        const ev = JSON.parse(dataLine.slice(5));
+                        ev.type = typeLine?typeLine.slice(6).trim():ev.type;
+                        events.push(ev);
+                        if(ev.type==='complete' || ev.type==='error') return;
+                    }
+                }
+            }
+        };
+        await Promise.race([readLoop(), new Promise(r=>setTimeout(r,15000))]);
+        reader.cancel();
+
+        const completed = events.some(e => e.type === 'complete');
         expect(completed, 'The agent run did not complete successfully in time.').toBe(true);
+        expect(events.some(e => e.type === 'step_start')).toBe(true);
     }, 20000);
 
     it('should generate events and artifacts on the filesystem', async () => {
@@ -90,7 +118,9 @@ describe('API Smoke Test', () => {
 
         expect(response.body).toHaveProperty('markdown');
         expect(response.body).toHaveProperty('comparisonTable');
-        expect(response.body.markdown).toContain('# Synthesis Report');
-        expect(response.body.comparisonTable.headers.length).toBeGreaterThanOrEqual(1);
+        expect(response.body.markdown.length).toBeGreaterThan(200);
+        expect(response.body.comparisonTable.rows.length).toBeGreaterThanOrEqual(3);
+        // ensure quant/qual columns included
+        expect(response.body.comparisonTable.headers).toContain('Quant Score');
     });
 });

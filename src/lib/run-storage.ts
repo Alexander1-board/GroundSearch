@@ -37,7 +37,7 @@ export async function create(runId: string){
 
 export async function appendEvent(runId: string, event: RunEvent){
   await ensureBase(runId);
-  const line = JSON.stringify({ ts: event.ts ?? Date.now(), ...event }) + '\n';
+  const line = JSON.stringify({ ...event, ts: event.ts ?? Date.now() }) + '\n';
   await enqueue(runId, async () => { await fs.appendFile(eventsFile(runId), line, 'utf8'); });
 }
 

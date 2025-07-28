@@ -1,7 +1,5 @@
 // path: src/config/capabilities.ts
-import { Capability } from '../spec/schemas.js';
-
-export const CAPABILITIES: Capability[] = [
+export const CAPABILITIES = [
   {
     source_id: 'pubmed',
     name: 'PubMed',

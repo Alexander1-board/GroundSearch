@@ -27,6 +27,7 @@ dist/
 runs/
 .env
 .env.*
+!.env.example
 .DS_Store
 coverage/
 npm-debug.log*

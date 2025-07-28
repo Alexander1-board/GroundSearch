@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <id>http://arxiv.org/abs/1234.5678v1</id>
+    <updated>2020-01-01T00:00:00Z</updated>
+    <published>2019-12-31T00:00:00Z</published>
+    <title>Sample Paper One</title>
+    <summary>Abstract one.</summary>
+    <author><name>A. Author</name></author>
+    <link href="http://arxiv.org/abs/1234.5678v1" rel="alternate" type="text/html"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2345.6789v2</id>
+    <updated>2021-02-01T12:00:00Z</updated>
+    <published>2021-02-01T12:00:00Z</published>
+    <title>Sample Paper Two</title>
+    <summary>Abstract two.</summary>
+    <author><name>B. Author</name></author>
+    <author><name>C. Author</name></author>
+    <link href="http://arxiv.org/abs/2345.6789v2" rel="alternate" type="text/html"/>
+  </entry>
+</feed>
