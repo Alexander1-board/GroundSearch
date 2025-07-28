@@ -1,0 +1,49 @@
+{
+    "queryresult": {
+        "success": true,
+        "error": false,
+        "numpods": 2,
+        "datatypes": "City,Country,Financial",
+        "timedout": "",
+        "timedoutpods": "",
+        "timing": 1.157,
+        "parsetiming": 0.231,
+        "parsetimedout": false,
+        "recalculate": "",
+        "id": "MSP1101a084i1h5d9g4g00005a3g6i8i1i2h3i7i",
+        "host": "https://www4b.wolframalpha.com",
+        "server": "42",
+        "related": "https://www4b.wolframalpha.com/api/v2/relatedQueries.jsp?id=MSPa1111a084i1h5d9g4g00003b8e7e3h6a6c4b2g",
+        "version": "2.6",
+        "pods": [
+            {
+                "title": "Input interpretation",
+                "scanner": "Identity",
+                "id": "Input",
+                "position": 100,
+                "error": false,
+                "numsubpods": 1,
+                "subpods": [
+                    {
+                        "title": "",
+                        "plaintext": "GDP of France"
+                    }
+                ]
+            },
+            {
+                "title": "Result",
+                "scanner": "Data",
+                "id": "Result",
+                "position": 200,
+                "error": false,
+                "numsubpods": 1,
+                "subpods": [
+                    {
+                        "title": "",
+                        "plaintext": "$3.1 trillion per year (2024 estimate)"
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "header": {
+        "type": "esearch",
+        "version": "2.0"
+    },
+    "esearchresult": {
+        "count": "3",
+        "retmax": "3",
+        "retstart": "0",
+        "querykey": "1",
+        "webenv": "NCID_1_90509639_130.14.22.215_9001_1600109787_123456789_0_1",
+        "idlist": [
+            "33093014",
+            "33032994",
+            "32943432"
+        ],
+        "translationset": [
+            {
+                "from": "diabetes",
+                "to": "\"diabetes mellitus\"[MeSH Terms] OR \"diabetes mellitus\"[All Fields] OR \"diabetes\"[All Fields]"
+            }
+        ],
+        "querytranslation": "\"diabetes mellitus\"[MeSH Terms] OR \"diabetes mellitus\"[All Fields] OR \"diabetes\"[All Fields]"
+    }
+}

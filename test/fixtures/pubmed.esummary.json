@@ -1,0 +1,78 @@
+{
+    "header": {
+        "type": "esummary",
+        "version": "2.0"
+    },
+    "result": {
+        "uids": [
+            "33093014",
+            "33032994",
+            "32943432"
+        ],
+        "33093014": {
+            "uid": "33093014",
+            "pubdate": "2021 Jan",
+            "epubdate": "2020 Oct 22",
+            "source": "N Engl J Med",
+            "authors": [
+                { "name": "Mock A", "authtype": "Author" },
+                { "name": "Mock B", "authtype": "Author" }
+            ],
+            "lastauthor": "Mock B",
+            "title": "Mock Title 1: Efficacy of Semaglutide in Adults with Overweight or Obesity.",
+            "sorttitle": "mock title 1 efficacy of semaglutide in adults with overweight or obesity",
+            "volume": "384",
+            "issue": "11",
+            "pages": "989-1002",
+            "lang": ["eng"],
+            "issn": "0028-4793",
+            "essn": "1533-4406",
+            "pubtype": ["Journal Article"],
+            "articleids": [
+                { "idtype": "pubmed", "idtypen": 1, "value": "33093014" },
+                { "idtype": "doi", "idtypen": 3, "value": "10.1056/NEJMoa2032183" }
+            ],
+            "history": [
+                { "pubstatus": "pubmed", "date": "2020/10/23 06:00" },
+                { "pubstatus": "entrez", "date": "2020/10/22 08:35" }
+            ],
+            "references": [],
+            "attributes": ["Has Abstract"],
+            "pmcrefcount": "",
+            "fulljournalname": "The New England journal of medicine",
+            "elocationid": "doi: 10.1056/NEJMoa2032183",
+            "doctype": "article",
+            "srccontriblist": [],
+            "booktitle": "",
+            "medium": "",
+            "edition": "",
+            "publisherlocation": "",
+            "publishername": "",
+            "srcdate": "",
+            "reportnumber": "",
+            "availablefromurl": "",
+            "locationlabel": "",
+            "doccontriblist": [],
+            "docdate": "",
+            "bookname": [],
+            "chapter": "",
+            "sortpubdate": "2021/01/01 00:00",
+            "sortfirstauthor": "Mock A",
+            "abstract": "This is a mock abstract for a paper about a new diabetes treatment."
+        },
+        "33032994": {
+            "uid": "33032994",
+            "pubdate": "2020",
+            "title": "Mock Title 2: Another fake paper",
+            "authors": [{ "name": "Mock C", "authtype": "Author" }],
+            "sortpubdate": "2020/01/01 00:00"
+        },
+        "32943432": {
+            "uid": "32943432",
+            "pubdate": "2019 Dec",
+            "title": "Mock Title 3: An older, less relevant paper",
+            "authors": [{ "name": "Mock D", "authtype": "Author" }],
+            "sortpubdate": "2019/12/01 00:00"
+        }
+    }
+}
