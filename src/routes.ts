@@ -6,7 +6,6 @@ import { finaliseInterview } from './agents/interview.js';
 import { createExecutionPlan } from './agents/orchestrator.js';
 import { startExecution, eventEmitter } from './dispatcher.js';
 import { getLLM } from './providers/registry.js';
-import { MockLLMClient } from './types/llm.js';
 import { loadConfig, saveConfig } from './config/user-config.js';
 import { availableProviders } from './providers/registry.js';
 import { startSession, replySession } from './agents/conversation.js';
@@ -34,10 +33,11 @@ apiRouter.post('/providers/test', async (_req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
-apiRouter.post('/chat/start', async (_req: Request, res: Response, next: NextFunction) => {
+apiRouter.post('/chat/start', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const cfg = await loadConfig();
-    const llm = getLLM(cfg.default_provider as any, cfg.default_model);
+    const { provider, model } = req.body ?? {};
+    const llm = getLLM((provider || cfg.default_provider) as any, model || cfg.default_model);
     const out = await startSession(llm);
     res.json(out);
   } catch(e){ next(e); }
@@ -46,9 +46,9 @@ apiRouter.post('/chat/start', async (_req: Request, res: Response, next: NextFun
 apiRouter.post('/chat/:sessionId/reply', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { sessionId } = req.params;
-    const { message } = req.body ?? {};
+    const { message, provider, model } = req.body ?? {};
     const cfg = await loadConfig();
-    const llm = getLLM(cfg.default_provider as any, cfg.default_model);
+    const llm = getLLM((provider || cfg.default_provider) as any, model || cfg.default_model);
     const out = await replySession(sessionId, message, llm);
     res.json(out);
   } catch(e){ next(e); }
@@ -78,13 +78,24 @@ apiRouter.post('/interview/finalise', async (req: Request, res: Response, next: 
   }catch(e){ next(e); }
 });
 
+apiRouter.post('/plan/preview', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { brief, model, provider } = req.body ?? {};
+    const validated = ResearchBriefSchema.parse(brief);
+    const cfg = await loadConfig();
+    const llm = getLLM((provider || cfg.default_provider) as any, model || cfg.default_model);
+    const plan = await createExecutionPlan(validated, llm);
+    res.json(plan);
+  } catch(e){ next(e); }
+});
+
 apiRouter.post('/agent/start', async (req: Request, res: Response, next: NextFunction) => {
   try{
-    const { brief, model } = req.body ?? {};
+    const { brief, model, provider } = req.body ?? {};
     const validated = ResearchBriefSchema.parse(brief);
     const runId = uuidv4();
     const cfg = await loadConfig();
-    const llm = getLLM(cfg.default_provider as any, model || cfg.default_model);
+    const llm = getLLM((provider || cfg.default_provider) as any, model || cfg.default_model);
     const plan = await createExecutionPlan(validated, llm);
     await runStorage.create(runId);
     logger.info('run created', { runId });
@@ -98,16 +109,20 @@ apiRouter.post('/agent/start', async (req: Request, res: Response, next: NextFun
 apiRouter.get('/agent/:runId/stream', async (req: Request, res: Response, next: NextFunction) => {
   try{
     const { runId } = req.params;
+    const closeOnComplete = req.query.closeOnComplete === '1';
     logger.info('sse connect', { runId });
     res.writeHead(200, { 'Content-Type':'text/event-stream', 'Cache-Control':'no-cache', 'Connection':'keep-alive' });
-    // replay
     const past = await runStorage.getEvents(runId);
     for (const evt of past){
       res.write(`event: ${evt.type}\n`);
       res.write(`data: ${JSON.stringify(evt)}\n\n`);
     }
     const ka = setInterval(()=>res.write(':\n\n'), 15000);
-    const handler = (evt: any)=>{ res.write(`event: ${evt.type}\n`); res.write(`data: ${JSON.stringify(evt)}\n\n`); };
+    const handler = (evt: any)=>{
+      res.write(`event: ${evt.type}\n`);
+      res.write(`data: ${JSON.stringify(evt)}\n\n`);
+      if(closeOnComplete && evt.type==='complete'){ clearInterval(ka); eventEmitter.off(runId, handler); res.end(); }
+    };
     eventEmitter.on(runId, handler);
     req.on('close', ()=>{ clearInterval(ka); eventEmitter.off(runId, handler); logger.info('sse disconnect', { runId }); });
   }catch(e){ next(e); }

@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist"]
+}

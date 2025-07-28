@@ -15,7 +15,7 @@ const DEFAULT_CONFIG: UserConfig = {
   default_provider: 'gemini',
   default_model: 'gemini-2.5-flash',
   interview_preprompt: 'You are a helpful research assistant.',
-  enabled_tools: ['pubmed','arxiv','wolfram','openalex','mediawiki'],
+  enabled_tools: ['pubmed','arxiv','wolfram','openalex','mediawiki','leaks'],
   allowed_domains: ['clinical','policy','economics','technology','other']
 };
 
