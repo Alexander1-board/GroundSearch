@@ -1,0 +1,20 @@
+# UX Flow
+
+1. **Config Screen**
+   - GET `/api/config`
+   - PUT `/api/config`
+   - GET `/api/providers`
+2. **Interview Chat**
+   - POST `/api/chat/start`
+   - POST `/api/chat/{id}/reply`
+   - GET  `/api/chat/{id}/stream`
+3. **Plan Review**
+   - POST `/api/interview/finalise`
+   - POST `/api/agent/start`
+   - GET `/api/agent/{runId}/plan`
+4. **Run Monitor**
+   - GET `/api/agent/{runId}/stream`
+   - GET `/api/runs`
+   - POST `/api/report/generate`
+5. **Report Screen**
+   - GET `/api/report/export?runId=<id>&format=md`

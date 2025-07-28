@@ -11,6 +11,13 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.use(express.static(process.cwd()));
+
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  logger.debug('req', { method: req.method, url: req.url });
+  next();
+});
+
 app.use('/api', apiRouter);
 
 // Error handler

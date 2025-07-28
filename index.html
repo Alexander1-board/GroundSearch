@@ -1,20 +1,16 @@
-<script type="importmap">
-{
-  "imports": {
-    "cors": "https://esm.sh/cors@^2.8.5",
-    "express": "https://esm.sh/express@^5.1.0",
-    "vitest": "https://esm.sh/vitest@^3.2.4",
-    "events": "https://esm.sh/events@^3.3.0",
-    "zod": "https://esm.sh/zod@^4.0.10",
-    "uuid": "https://esm.sh/uuid@^11.1.0",
-    "supertest": "https://esm.sh/supertest@^7.1.4",
-    "dotenv/": "https://esm.sh/dotenv@^17.2.1/",
-    "path": "https://esm.sh/path@^0.12.7",
-    "fs": "https://esm.sh/fs@^0.0.1-security",
-    "fast-xml-parser": "https://esm.sh/fast-xml-parser@^5.2.5",
-    "process": "https://esm.sh/process@^0.11.10"
-  }
-}
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AutoResearch</title>
 <link rel="stylesheet" href="/index.css">
-<script type="module" src="/index.tsx"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>AutoResearch</h1>
+    <p>Backend server running. Recent runs:</p>
+    <div id="runs"></div>
+  </div>
+  <script type="module" src="/index.js"></script>
+</body>
+</html>

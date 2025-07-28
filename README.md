@@ -14,13 +14,23 @@ This project is a minimal, working TypeScript/Node scaffold for AutoResearch, a 
     ```bash
     cp .env.example .env
     ```
-    To make live API calls, fill in `WOLFRAM_APPID`, `NCBI_API_KEY`, and `OPENALEX_EMAIL` in your new `.env` file.
+    To make live API calls, fill in `WOLFRAM_APPID` and `NCBI_API_KEY`. `OPENALEX_EMAIL` is optional.
+
+    The app reads additional preferences from `.data/user-config.json`. You can change the default LLM provider, model, and the `interview_preprompt` used to guide the chat interview.
+
+    ```json
+    {
+      "default_provider": "gemini",
+      "default_model": "gemini-2.5-flash",
+      "interview_preprompt": "You are a helpful research assistant..."
+    }
+    ```
 
 3.  **Run the development server:**
     ```bash
     npm run dev
     ```
-    The API server will start on `http://localhost:3000` (or the port specified in your `.env` file). All run data will be persisted to the `./runs` directory.
+    The API server will start on `http://localhost:3000` (or the port specified in your `.env` file). All run data will be persisted to the `./runs` directory. Visit `http://localhost:3000/` for a minimal UI showing recent runs.
 
 4.  **Run tests:**
     ```bash
@@ -30,6 +40,14 @@ This project is a minimal, working TypeScript/Node scaffold for AutoResearch, a 
 ## API Demo Flow (using `curl` and `jq`)
 
 Here's how to interact with the API endpoints.
+
+### Provider Info
+
+Check which LLM providers are available:
+
+```bash
+curl -s http://localhost:3000/api/providers | jq .
+```
 
 ### 1. Finalise the Research Brief
 
@@ -102,4 +120,28 @@ This will print the final JSON report, which contains the markdown and a structu
     ]
   }
 }
+```
+
+### 5. Explore Stored Runs
+
+List all runs with basic status:
+
+```bash
+curl -s http://localhost:3000/api/runs | jq .
+```
+
+Retrieve the saved execution plan for a run:
+
+```bash
+curl -s http://localhost:3000/api/agent/$RUN_ID/plan | jq .
+```
+
+### 6. Chat Interview
+
+Start a chat session and stream messages:
+
+```bash
+curl -s -X POST http://localhost:3000/api/chat/start | jq .
+curl -s -X POST http://localhost:3000/api/chat/$SESSION_ID/reply -d '{"message":"Hello"}'
+curl -N http://localhost:3000/api/chat/$SESSION_ID/stream
 ```

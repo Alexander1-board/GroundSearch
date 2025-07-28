@@ -1,0 +1,10 @@
+{
+  "batchcomplete": "",
+  "query": {
+    "search": [
+      {"pageid":1,"title":"Example","snippet":"Example page"},
+      {"pageid":2,"title":"Another","snippet":"Another page"},
+      {"pageid":3,"title":"Third","snippet":"Third page"}
+    ]
+  }
+}
