@@ -21,15 +21,35 @@ export default function ApiActivity(){
     return g;
   }, [data]);
   const series = useMemo(() => Object.values(grouped), [grouped]);
-  if(!series.length) return <div className="text-sm text-gray-500">No API calls yet</div>;
+  const topUrls = useMemo(() => {
+    return Object.entries(state.apiUrls)
+      .map(([url, info]) => ({ url, count: info.count, lastTs: info.lastTs }))
+      .sort((a,b) => b.count - a.count)
+      .slice(0,5);
+  }, [state.apiUrls]);
+  const empty = series.length===0;
+  const chartData = empty ? [{ ts: Date.now() }] : series;
   return (
+    <div className="relative space-y-2">
     <ResponsiveContainer width="100%" height={200}>
-      <LineChart data={series} margin={{left:10,right:10,top:10,bottom:10}}>
+      <LineChart data={chartData} margin={{left:10,right:10,top:10,bottom:10}}>
         <XAxis dataKey="ts" tickFormatter={t=>format(Number(t),'HH:mm:ss')} />
         <YAxis />
         <Tooltip labelFormatter={l=>format(Number(l),'HH:mm:ss')} />
         {agents.map(a => <Line key={a} type="monotone" dataKey={a} stroke="#8884d8" dot={false} />)}
       </LineChart>
     </ResponsiveContainer>
+    {empty && <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">No API calls yet</div>}
+    {topUrls.length>0 && (
+      <table className="text-xs w-full border">
+        <thead><tr className="bg-gray-50"><th className="text-left">URL</th><th>Count</th><th>Last</th></tr></thead>
+        <tbody>
+          {topUrls.map((u,i)=>(
+            <tr key={i} className="border-t"><td className="truncate max-w-xs">{u.url}</td><td className="text-center">{u.count}</td><td className="text-center">{format(u.lastTs,'HH:mm:ss')}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+    </div>
   );
 }

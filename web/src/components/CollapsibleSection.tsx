@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 
 interface Props { title: string; id: string; children: React.ReactNode; right?: React.ReactNode }
@@ -7,6 +7,14 @@ export default function CollapsibleSection({ title, id, children, right }: Props
   const key = `ui:collapsed:${id}`;
   const [open, setOpen] = useState(() => localStorage.getItem(key) !== '1');
   const toggle = () => { const n = !open; setOpen(n); localStorage.setItem(key, n ? '0':'1'); };
+  useEffect(() => {
+    const handler = (e: any) => {
+      if(e?.detail === 'expand'){ setOpen(true); localStorage.setItem(key,'0'); }
+      if(e?.detail === 'collapse'){ setOpen(false); localStorage.setItem(key,'1'); }
+    };
+    window.addEventListener('collapsible:set', handler);
+    return () => window.removeEventListener('collapsible:set', handler);
+  }, []);
   return (
     <section className="border rounded">
       <header className="flex justify-between items-center bg-gray-100 px-2 py-1 cursor-pointer" onClick={toggle} aria-expanded={open}>

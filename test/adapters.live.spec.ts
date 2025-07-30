@@ -19,6 +19,6 @@ const hasKeys = !!process.env.NCBI_API_KEY && !!process.env.WOLFRAM_APPID;
 
   it('Wolfram live query', async () => {
     const res = await queryWolfram('population of germany');
-    expect(res.pods.length).toBeGreaterThan(0);
+    expect(res.length).toBeGreaterThan(0);
   });
 });

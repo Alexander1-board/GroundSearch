@@ -24,6 +24,7 @@ export async function loadConfig(): Promise<UserConfig> {
     const txt = await fs.readFile(CONFIG_PATH, 'utf8');
     return { ...DEFAULT_CONFIG, ...JSON.parse(txt) };
   } catch {
+    await saveConfig(DEFAULT_CONFIG);
     return DEFAULT_CONFIG;
   }
 }

@@ -5,6 +5,9 @@ import path from 'path';
 import cors from 'cors';
 import { apiRouter } from './routes.js';
 import { logger } from './lib/logger.js';
+import { loadSecrets } from './config/secrets.js';
+
+await loadSecrets().catch(() => {});
 
 const app: Express = express();
 const port = process.env.PORT || 3000;

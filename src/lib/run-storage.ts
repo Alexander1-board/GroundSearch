@@ -7,6 +7,7 @@ import { logger } from './logger.js';
 export interface RunEvent { type: string; ts: number; [k: string]: any; }
 
 const RUNS_DIR = process.env.RUNS_DIR || path.resolve(process.cwd(), 'runs');
+fs.mkdir(RUNS_DIR, { recursive: true }).catch(() => {});
 
 function safeId(id: string){ return id.replace(/[^a-zA-Z0-9._-]/g, '_'); }
 function runDir(runId: string){ return path.join(RUNS_DIR, safeId(runId)); }
@@ -43,6 +44,7 @@ export async function appendEvent(runId: string, event: RunEvent){
 
 export async function getEvents(runId: string): Promise<RunEvent[]>{
   try{
+    await ensureBase(runId);
     const text = await fs.readFile(eventsFile(runId), 'utf8');
     return text.split('\n').filter(Boolean).map(l=>{ try{ return JSON.parse(l); } catch{ return null as any; }}).filter(Boolean);
   }catch{ return []; }
@@ -59,6 +61,7 @@ export async function saveArtifact(runId: string, name: string, data: string|Buf
 export async function getArtifact(runId: string, name: string): Promise<any|null>{
   const filePath = path.join(artifactsDir(runId), safeId(name));
   try{
+    await ensureBase(runId);
     const content = await fs.readFile(filePath, 'utf8');
     if (filePath.toLowerCase().endsWith('.json')) return JSON.parse(content);
     return content;

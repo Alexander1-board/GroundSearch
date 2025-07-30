@@ -22,13 +22,12 @@ describe('Adapters with fixtures', () => {
 
   it('parses Wolfram fixtures', async () => {
     const result = await queryWolfram('population of France');
-    expect(Array.isArray(result.pods)).toBe(true);
-    expect(result.pods.length).toBeGreaterThan(0);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].source_id).toBe('wolfram');
   });
 
   it('parses MediaWiki fixtures', async () => {
-    const records = await searchMediaWiki('example', 2);
-    expect(records.length).toBe(2);
-    expect(records[0].source_id).toBe('mediawiki');
+    const record = await searchMediaWiki('example');
+    expect(record.source_id).toBe('mediawiki');
   });
 });

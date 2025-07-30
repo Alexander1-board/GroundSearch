@@ -1,16 +1,18 @@
 // path: src/agents/interview.ts
 import { ResearchBrief, ResearchBriefSchema } from '../spec/schemas.js';
-import { LLMClient } from '../types/llm.js';
+import { getMessages } from '../lib/chat-storage.js';
 
-export async function finaliseInterview(transcript: string[], current_outline: any, _llm: LLMClient): Promise<ResearchBrief> {
-  // For demo: assume current_outline already contains required fields
+export async function finaliseInterview(sessionId: string): Promise<ResearchBrief> {
+  const msgs = await getMessages(sessionId);
+  const outlines = msgs.map(m => (m as any).outline).filter(Boolean);
+  const merged = Object.assign({}, ...outlines);
   return ResearchBriefSchema.parse({
-    objective: current_outline?.objective ?? 'General research question',
-    key_questions: current_outline?.key_questions ?? [],
-    scope: current_outline?.scope ?? { domains: [] },
-    deliverable: current_outline?.deliverable ?? { format: 'report', length: 'short' },
-    constraints: current_outline?.constraints,
-    citations_required: true,
-    user_notes: current_outline?.user_notes ?? '',
+    objective: merged.objective ?? 'General research question',
+    key_questions: merged.key_questions ?? [],
+    scope: merged.scope ?? { domains: [] },
+    deliverable: merged.deliverable ?? { format: 'report', length: 'short' },
+    constraints: merged.constraints,
+    citations_required: merged.citations_required ?? true,
+    user_notes: merged.user_notes ?? ''
   });
 }

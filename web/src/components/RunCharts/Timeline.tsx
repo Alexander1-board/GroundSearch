@@ -5,13 +5,14 @@ import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 export default function Timeline(){
   const state = useSyncExternalStore(subscribe, getSnapshot);
-  const steps = useMemo(() => Object.values(state.steps).sort((a,b)=>a.startTs-b.startTs), [state.steps]);
+  const steps = useMemo(() => Object.values(state.steps).slice().sort((a,b)=>a.startTs-b.startTs), [state.steps]);
   const durations = useMemo(() => steps.map((s,i)=>({i, dur: ((s.endTs||Date.now())-s.startTs)/1000})), [steps]);
-  if(!steps.length) return <div className="text-sm text-gray-500">No steps yet</div>;
+  const empty = steps.length===0;
+  const chartData = empty ? [{i:0,dur:0}] : durations;
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 relative">
       <ResponsiveContainer width="100%" height={40}>
-        <LineChart data={durations} margin={{left:0,right:0,top:0,bottom:0}}>
+        <LineChart data={chartData} margin={{left:0,right:0,top:0,bottom:0}}>
           <Line dataKey="dur" stroke="#8884d8" dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
@@ -25,10 +26,17 @@ export default function Timeline(){
               <span className="mr-2">{new Date(s.startTs).toLocaleTimeString()}</span>
               <span>{formatDistanceToNow(s.endTs || Date.now(), { addSuffix: false })}</span>
               <span className="ml-1 text-xs text-gray-400">({Math.round(durMs/1000)}s)</span>
+              {s.instructions && (
+                <details className="inline-block ml-1">
+                  <summary className="cursor-pointer text-blue-600">ℹ️</summary>
+                  <pre className="text-xs whitespace-pre-wrap bg-gray-50 p-1 max-w-lg">{s.instructions}</pre>
+                </details>
+              )}
             </li>
           );
         })}
       </ul>
+      {empty && <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">No steps yet</div>}
     </div>
   );
 }

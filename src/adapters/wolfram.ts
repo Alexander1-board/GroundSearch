@@ -3,8 +3,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import process from 'process';
 import { fetchWithRetry } from '../lib/http.js';
+import { RecordLite } from '../spec/schemas.js';
 
-interface WolframPod { title: string; plaintext?: string; } // simplified
+interface WolframPod { title: string; plaintext?: string; }
 
 function buildInput(query: string, opts: { region?: string; dates?: { from?: string; to?: string }; units?: string; perCapita?: boolean } = {}): string {
   let input = query;
@@ -19,35 +20,44 @@ function buildInput(query: string, opts: { region?: string; dates?: { from?: str
   return input.trim();
 }
 
-async function loadFixture(): Promise<{ pods: WolframPod[] }> {
+async function loadFixture(): Promise<RecordLite[]> {
   const data = JSON.parse(
     await fs.readFile(path.resolve(process.cwd(), 'test/fixtures/wolfram.json'), 'utf8')
   );
-  const pods = (data.queryresult?.pods || []).map((p: any) => ({ title: p.title, plaintext: p.subpods?.[0]?.plaintext }));
-  return { pods };
+  const pods = (data.queryresult?.pods || []) as any[];
+  return pods.map((p: any, idx: number) => ({
+    id: String(idx),
+    source_id: 'wolfram',
+    title: p.title,
+    url: `${data.queryresult?.host || 'https://www.wolframalpha.com'}/input/?i=${encodeURIComponent(p.subpods?.[0]?.plaintext || '')}`,
+    year: new Date().getFullYear(),
+    authors: [],
+    abstract: p.subpods?.[0]?.plaintext || ''
+  }));
 }
 
-export async function queryWolfram(question: string, opts: any = {}): Promise<{ pods: WolframPod[] }> {
-  const appid = process.env.WOLFRAM_APPID;
+export async function queryWolfram(question: string, opts: any = {}): Promise<RecordLite[]> {
+  const appid = process.env.WOLFRAM_APPID || process.env.WOLFRAM_APPID_SECRET;
   if (!appid) return loadFixture();
 
   const input = buildInput(question, opts);
-  const baseUrl = 'https://api.wolframalpha.com/v2/query';
-  const url = `${baseUrl}?input=${encodeURIComponent(input)}&output=json&appid=${appid}`;
+  const params = new URLSearchParams({ input, ...opts, appid });
+  const url = `https://www.wolframalpha.com/api/v1/llm-api?${params.toString()}`;
 
   try {
-    let res = await fetchWithRetry(url, {}, { rpsKey: 'wolfram' });
-    let data: any = await res.json();
-    if (!data.queryresult?.success && (data.queryresult?.didyoumeans || data.queryresult?.assumptions)) {
-      const refine = data.queryresult.didyoumeans?.didyoumean?.[0]?.val || data.queryresult.assumptions?.assumption?.[0]?.values?.[0]?.input;
-      if (refine) {
-        const refineUrl = `${baseUrl}?input=${encodeURIComponent(refine)}&output=json&appid=${appid}`;
-        res = await fetchWithRetry(refineUrl, {}, { rpsKey: 'wolfram' });
-        data = await res.json();
-      }
-    }
-    const pods = (data.queryresult?.pods || []).map((p: any) => ({ title: p.title, plaintext: p.subpods?.[0]?.plaintext }));
-    return { pods };
+    const res = await fetchWithRetry(url, { headers: { Authorization: `Bearer ${appid}` } }, { rpsKey: 'wolfram' });
+    if (res.status === 403) return loadFixture();
+    const data: any = await res.json();
+    const pods = data.pods || data.queryresult?.pods || [];
+    return pods.map((p: any, idx: number) => ({
+      id: String(idx),
+      source_id: 'wolfram',
+      title: p.title,
+      url: data.result_url || data.queryresult?.host || 'https://www.wolframalpha.com',
+      year: new Date().getFullYear(),
+      authors: [],
+      abstract: p.plaintext || p.subpods?.[0]?.plaintext || ''
+    }));
   } catch {
     return loadFixture();
   }
