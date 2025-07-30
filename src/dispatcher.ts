@@ -1,14 +1,15 @@
 // path: src/dispatcher.ts
 import { EventEmitter } from 'events';
-import { ExecutionPlan, ActionStep, RecordLite, Evidence, ResearchBrief } from './spec/schemas.js';
+import { ExecutionPlan, ActionStep, RecordLite, ResearchBrief } from './spec/schemas.js';
 import { LLMClient } from './types/llm.js';
 import * as runStorage from './lib/run-storage.js';
 import { logger } from './lib/logger.js';
 import { searchPubMed } from './adapters/pubmed.js';
 import { searchArxiv } from './adapters/arxiv.js';
 import { searchMediaWiki } from './adapters/mediawiki.js';
+import { searchLeaks } from './adapters/leaks.js';
 import { queryWolfram } from './adapters/wolfram.js';
-import path from 'path';
+import { enrichWithOpenAlex } from './adapters/openalex.js';
 import { screenRecords } from './agents/screening.js';
 import { generateReport } from './agents/synthesis.js';
 
@@ -20,91 +21,108 @@ async function emitEvent(runId: string, type: string, data: any){
   eventEmitter.emit(runId, evt);
 }
 
-async function executeStep(runId: string, step: ActionStep, llm: LLMClient, brief: ResearchBrief){
+async function executeSearchStep(
+  runId: string,
+  step: ActionStep,
+  brief: ResearchBrief,
+  collected: RecordLite[]
+): Promise<RecordLite[]> {
   logger.info('step start', { runId, stepId: step.id, action: step.action });
-  await emitEvent(runId, 'step_start', { stepId: step.id, action: step.action, agent: step.agent });
-  switch(step.action){
-    case 'SEARCH': {
-      let results: RecordLite[] = [];
-      if (step.agent === 'pubmed_agent') {
-        await emitEvent(runId, 'api_call', { agent: step.agent, url: 'pubmed' });
-        results = await searchPubMed(brief.objective, step.params?.retmax ?? 50);
-      }
-      if (step.agent === 'arxiv_agent') {
-        await emitEvent(runId, 'api_call', { agent: step.agent, url: 'arxiv' });
-        results = await searchArxiv(brief.objective, step.params?.max_results ?? 50);
-      }
-      if (step.agent === 'mediawiki_agent') {
-        await emitEvent(runId, 'api_call', { agent: step.agent, url: 'mediawiki' });
-        results = await searchMediaWiki(brief.objective, step.params?.limit ?? 5);
-      }
-      if (step.agent === 'wolfram_agent') {
-        await emitEvent(runId, 'api_call', { agent: step.agent, url: 'wolfram' });
-        const res = await queryWolfram(step.params?.input || brief.objective);
-        results = res.pods.map((p, idx) => ({
-          id: String(idx),
-          source_id: 'wolfram',
-          title: p.title,
-          url: 'https://www.wolframalpha.com/',
-          year: undefined,
-          authors: [],
-          abstract: p.plaintext
-        }));
-      }
-      const artifactPath = await runStorage.saveArtifact(runId, `${step.id}-results.json`, results);
-      await emitEvent(runId, 'artifact', { stepId: step.id, path: artifactPath });
-      await emitEvent(runId, 'stats', { stepId: step.id, count: results.length });
-      logger.debug('search results', { stepId: step.id, count: results.length });
+  await emitEvent(runId, 'step_start', {
+    stepId: step.id,
+    action: step.action,
+    agent: step.agent
+  });
+
+  let results: RecordLite[] = [];
+  switch (step.agent) {
+    case 'pubmed_agent': {
+      await emitEvent(runId, 'api_call', { tool: 'pubmed', params: step.params });
+      results = await searchPubMed(step.params?.term || brief.objective, step.params?.retmax ?? 50);
       break;
     }
-    case 'SCREEN': {
-      // Load all SEARCH step artifacts
-      let collected: RecordLite[] = [];
-      const events = await runStorage.getEvents(runId);
-      const searchSteps = events.filter(e => e.type === 'artifact' && String(e.path).includes('-results.json'));
-      for (const s of searchSteps) {
-        const name = path.basename(s.path);
-        const a = await runStorage.getArtifact(runId, name);
-        if (Array.isArray(a)) collected = collected.concat(a as any);
-      }
-      const screened = await screenRecords(collected);
-      const artifactPath = await runStorage.saveArtifact(runId, 'screened-evidence.json', screened);
-      await emitEvent(runId, 'artifact', { stepId: step.id, path: artifactPath });
-      await emitEvent(runId, 'stats', { stepId: step.id, count: screened.length });
-      logger.debug('screened count', { stepId: step.id, count: screened.length });
+    case 'arxiv_agent': {
+      await emitEvent(runId, 'api_call', { tool: 'arxiv', params: step.params });
+      results = await searchArxiv(step.params?.query || brief.objective, step.params?.max_results ?? 50);
       break;
     }
-    case 'SYNTHESISE': {
-      const ev = await runStorage.getArtifact(runId, 'screened-evidence.json') as Evidence[];
-      const output = await generateReport(runId, llm, Array.isArray(ev)?ev:[]);
-      const artifactPath = await runStorage.saveArtifact(runId, 'final-report.json', output);
-      await emitEvent(runId, 'artifact', { stepId: step.id, path: artifactPath });
-      logger.info('report generated', { runId });
+    case 'mediawiki_agent': {
+      await emitEvent(runId, 'api_call', { tool: 'mediawiki', params: step.params });
+      results = [await searchMediaWiki(step.params?.term || brief.objective)];
+      break;
+    }
+    case 'wolfram_agent': {
+      await emitEvent(runId, 'api_call', { tool: 'wolfram', params: step.params });
+      results = await queryWolfram(step.params?.input || brief.objective, step.params);
+      break;
+    }
+    case 'leaks_agent': {
+      await emitEvent(runId, 'api_call', { tool: 'leaks', params: step.params });
+      results = await searchLeaks(step.params?.query || brief.objective, step.params?.limit ?? 20);
+      break;
+    }
+    case 'openalex_agent': {
+      await emitEvent(runId, 'api_call', { tool: 'openalex', params: step.params });
+      results = await Promise.all(collected.map(r => enrichWithOpenAlex(r)));
       break;
     }
     default:
-      logger.warn('Unknown step action', { action: step.action });
+      logger.warn('Unknown search agent', { agent: step.agent });
   }
+
+  const artifactPath = await runStorage.saveArtifact(
+    runId,
+    `${step.id}-results.json`,
+    results
+  );
+  await emitEvent(runId, 'artifact', { stepId: step.id, path: artifactPath });
+  await emitEvent(runId, 'stats', { stepId: step.id, count: results.length });
+  logger.debug('search results', { stepId: step.id, count: results.length });
+  return results;
 }
 
-export async function startExecution(runId: string, plan: ExecutionPlan, llm: LLMClient, brief?: ResearchBrief){
+export async function startExecution(
+  runId: string,
+  plan: ExecutionPlan,
+  llm: LLMClient,
+  brief?: ResearchBrief
+) {
   await runStorage.create(runId);
   await emitEvent(runId, 'phase', { phase: 'start' });
   logger.info('execution started', { runId });
+  const collected: RecordLite[] = [];
   try {
-    for (const step of plan.steps){
+    for (const step of plan.steps) {
+      if (step.action !== 'SEARCH') continue;
       try {
-        await executeStep(runId, step, llm, brief as any);
-      } catch (e:any) {
+        const results = await executeSearchStep(runId, step, brief as any, collected);
+        collected.push(...results);
+      } catch (e: any) {
         await emitEvent(runId, 'error', { stepId: step.id, message: String(e) });
-        await emitEvent(runId, 'complete', { ok: false });
-        return;
       }
     }
+
+    const { kept, dropped_count } = await screenRecords(collected, brief as any, llm);
+    const screenedPath = await runStorage.saveArtifact(
+      runId,
+      'screened-evidence.json',
+      kept
+    );
+    await emitEvent(runId, 'artifact', { path: screenedPath });
+    await emitEvent(runId, 'stats', { dropped: dropped_count });
+
+    const final = await generateReport(runId, llm, kept);
+    const reportPath = await runStorage.saveArtifact(
+      runId,
+      'final-report.json',
+      final
+    );
+    await emitEvent(runId, 'artifact', { path: reportPath });
     await emitEvent(runId, 'complete', { ok: true });
     logger.info('execution complete', { runId });
-  } catch (e:any) {
+  } catch (e: any) {
     await emitEvent(runId, 'error', { message: String(e) });
     await emitEvent(runId, 'complete', { ok: false });
   }
 }
+

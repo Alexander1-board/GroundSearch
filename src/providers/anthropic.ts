@@ -1,7 +1,9 @@
 import { LLMClient, MockLLMClient } from '../types/llm.js';
 import { fetchWithRetry } from '../lib/http.js';
+
 export function getAnthropicClient(model: string): LLMClient {
-  if (!process.env.ANTHROPIC_API_KEY) return new MockLLMClient('anthropic', model);
+  const key = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY_SECRET;
+  if (!key) return new MockLLMClient('anthropic', model);
   return {
     provider: 'anthropic',
     model,
@@ -10,7 +12,7 @@ export function getAnthropicClient(model: string): LLMClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+          'x-api-key': key || '',
           'anthropic-version': '2023-06-01'
         } as any,
         body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: 'user', content: prompt }] })

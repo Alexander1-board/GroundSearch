@@ -27,3 +27,10 @@ export function buildWolframInput(brief: import('../spec/schemas.js').ResearchBr
   const to = timeframe.to ?? new Date().toISOString().slice(0,10);
   return `${q} from ${from} to ${to}`;
 }
+
+export function buildLeaksQuery(brief: import('../spec/schemas.js').ResearchBrief): string {
+  const bits: string[] = [brief.objective];
+  if (brief.key_questions?.length) bits.push(...brief.key_questions);
+  if (brief.scope?.domains?.length) bits.push(...brief.scope.domains);
+  return bits.filter(Boolean).join(' ');
+}

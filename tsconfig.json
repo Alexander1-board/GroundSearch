@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "lib": ["ESNext"],
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM"],
     "baseUrl": ".",
     "paths": {
       "src/*": ["src/*"]
