@@ -16,7 +16,7 @@ export default function RunDashboard(){
   useEffect(()=>{ if(runId) connect(runId); return () => disconnect(); }, [runId]);
 
   const toggle = () => state.paused ? resume() : pause();
-
+  const artifacts = state.events.filter(e=>e.type==='artifact');
   return (
     <div className="p-4 space-y-4">
       <div className="flex justify-between items-center">
@@ -46,11 +46,15 @@ export default function RunDashboard(){
         </div>
       </CollapsibleSection>
       <CollapsibleSection id="artifacts" title="Artifacts">
-        <ul className="list-disc pl-5 space-y-1 text-sm">
-          {state.events.filter(e=>e.type==='artifact').map((e,i)=> (
-            <li key={i}><a href={`/${e.path}`} className="underline" target="_blank">{e.path}</a></li>
-          ))}
-        </ul>
+        {artifacts.length ? (
+          <ul className="list-disc pl-5 space-y-1 text-sm">
+            {artifacts.map((e,i)=> (
+              <li key={i}><a href={`/${e.path}`} className="underline" target="_blank" rel="noreferrer">{e.path}</a></li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-sm text-gray-500">No artifacts yet</div>
+        )}
       </CollapsibleSection>
     </div>
   );

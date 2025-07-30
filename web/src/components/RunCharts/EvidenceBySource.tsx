@@ -7,6 +7,7 @@ const COLORS = ['#8884d8','#82ca9d','#ffc658','#d0ed57','#a4de6c'];
 export default function EvidenceBySource(){
   const state = useSyncExternalStore(subscribe, getSnapshot);
   const data = useMemo(() => state.evidenceBySource, [state.evidenceBySource]);
+  if(!data.length) return <div className="text-sm text-gray-500">No evidence yet</div>;
   return (
     <ResponsiveContainer width="100%" height={200}>
       <PieChart>

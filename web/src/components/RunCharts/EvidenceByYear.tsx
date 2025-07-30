@@ -5,6 +5,7 @@ import { subscribe, getSnapshot } from '../../state/runStore';
 export default function EvidenceByYear(){
   const state = useSyncExternalStore(subscribe, getSnapshot);
   const data = useMemo(() => state.evidenceByYear, [state.evidenceByYear]);
+  if(!data.length) return <div className="text-sm text-gray-500">No evidence yet</div>;
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{left:10,right:10,top:10,bottom:10}}>

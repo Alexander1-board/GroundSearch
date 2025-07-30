@@ -101,12 +101,13 @@ export function connect(runId: string){
   state.paused = false;
   state.events = []; state.steps={}; state.apiSeries=[]; state.evidenceBySource=[]; state.evidenceByYear=[]; state.stats={totalSteps:0, doneSteps:0, errors:0};
   es = new EventSource(`/api/agent/${runId}/stream`);
-  es.onmessage = (e)=>{
+  const handle = (e: MessageEvent) => {
     if(state.paused) return;
-    const evt = JSON.parse(e.data);
-    applyEventInternal(evt);
+    try { applyEventInternal(JSON.parse(e.data)); } catch {}
   };
-  es.onerror = ()=>{};
+  ["phase","step_start","artifact","api_call","stats","complete","error"].forEach(t => es.addEventListener(t, handle));
+  es.onerror = () => {};
+
   notify();
 }
 

@@ -21,13 +21,14 @@ export default function ApiActivity(){
     return g;
   }, [data]);
   const series = useMemo(() => Object.values(grouped), [grouped]);
+  if(!series.length) return <div className="text-sm text-gray-500">No API calls yet</div>;
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={series} margin={{left:10,right:10,top:10,bottom:10}}>
-        <XAxis dataKey="ts" tickFormatter={t=>format(t,'HH:mm:ss')} />
+        <XAxis dataKey="ts" tickFormatter={t=>format(Number(t),'HH:mm:ss')} />
         <YAxis />
         <Tooltip labelFormatter={l=>format(Number(l),'HH:mm:ss')} />
-        {agents.map(a => <Line key={a} type="monotone" dataKey={a} stroke="#888" dot={false} />)}
+        {agents.map(a => <Line key={a} type="monotone" dataKey={a} stroke="#8884d8" dot={false} />)}
       </LineChart>
     </ResponsiveContainer>
   );
