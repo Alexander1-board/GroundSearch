@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { connect, disconnect, pause, resume, subscribe, getState } from '../state/runStore';
+import { connect, disconnect, pause, resume, subscribe, getSnapshot } from '../state/runStore';
 import CollapsibleSection from '../components/CollapsibleSection';
 import StatBadge from '../components/StatBadge';
 import Timeline from '../components/RunCharts/Timeline';
@@ -11,7 +11,7 @@ import { useSyncExternalStore } from 'react';
 
 export default function RunDashboard(){
   const { runId } = useParams();
-  const state = useSyncExternalStore(subscribe, ()=>({...getState()}));
+  const state = useSyncExternalStore(subscribe, getSnapshot);
 
   useEffect(()=>{ if(runId) connect(runId); return () => disconnect(); }, [runId]);
 

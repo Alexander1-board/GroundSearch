@@ -28,11 +28,15 @@ const state: RunState = {
 
 let es: EventSource | null = null;
 const listeners = new Set<() => void>();
+let snapshot: RunState = { ...state };
 
-function notify(){ listeners.forEach(fn => fn()); }
+function notify(){
+  snapshot = { ...state };
+  listeners.forEach(fn => fn());
+}
 
 export function subscribe(fn: ()=>void){ listeners.add(fn); return () => listeners.delete(fn); }
-export function getState(){ return state; }
+export function getSnapshot(){ return snapshot; }
 
 export function pause(){ state.paused = true; notify(); }
 export function resume(){ state.paused = false; notify(); }

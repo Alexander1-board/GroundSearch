@@ -7,6 +7,7 @@ import Interview from './pages/Interview';
 import Plan from './pages/Plan';
 import RunDashboard from './pages/RunDashboard';
 import Report from './pages/Report';
+import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 
 const App = () => (
@@ -24,6 +25,8 @@ const App = () => (
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );

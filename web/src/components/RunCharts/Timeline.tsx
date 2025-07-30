@@ -1,10 +1,10 @@
-import { useSyncExternalStore } from 'react';
-import { subscribe, getState } from '../../state/runStore';
+import { useSyncExternalStore, useMemo } from 'react';
+import { subscribe, getSnapshot } from '../../state/runStore';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function Timeline(){
-  const state = useSyncExternalStore(subscribe, ()=>({...getState()}));
-  const steps = Object.values(state.steps).sort((a,b)=>a.startTs-b.startTs);
+  const state = useSyncExternalStore(subscribe, getSnapshot);
+  const steps = useMemo(() => Object.values(state.steps).sort((a,b)=>a.startTs-b.startTs), [state.steps]);
   return (
     <ul className="text-sm space-y-1">
       {steps.map(s => {

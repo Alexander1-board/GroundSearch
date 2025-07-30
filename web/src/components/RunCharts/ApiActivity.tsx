@@ -1,23 +1,26 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useSyncExternalStore } from 'react';
-import { subscribe, getState } from '../../state/runStore';
+import { useSyncExternalStore, useMemo } from 'react';
+import { subscribe, getSnapshot } from '../../state/runStore';
 import { format } from 'date-fns';
 
 export default function ApiActivity(){
-  const state = useSyncExternalStore(subscribe, ()=>({...getState()}));
-  const data = state.apiSeries.sort((a,b)=>a.bucketTs-b.bucketTs).map(p=>({
+  const state = useSyncExternalStore(subscribe, getSnapshot);
+  const data = useMemo(() => state.apiSeries.slice().sort((a,b)=>a.bucketTs-b.bucketTs).map(p=>({
     ts: p.bucketTs,
     agent: p.agent,
     count: p.count
-  }));
-  const agents = Array.from(new Set(data.map(d=>d.agent)));
-  const grouped: Record<number, any> = {};
-  for(const item of data){
-    const key = item.ts;
-    grouped[key] = grouped[key] || { ts: item.ts };
-    grouped[key][item.agent] = (grouped[key][item.agent]||0) + item.count;
-  }
-  const series = Object.values(grouped);
+  })), [state.apiSeries]);
+  const agents = useMemo(() => Array.from(new Set(data.map(d=>d.agent))), [data]);
+  const grouped: Record<number, any> = useMemo(() => {
+    const g: Record<number, any> = {};
+    for(const item of data){
+      const key = item.ts;
+      g[key] = g[key] || { ts: item.ts };
+      g[key][item.agent] = (g[key][item.agent]||0) + item.count;
+    }
+    return g;
+  }, [data]);
+  const series = useMemo(() => Object.values(grouped), [grouped]);
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={series} margin={{left:10,right:10,top:10,bottom:10}}>

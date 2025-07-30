@@ -1,10 +1,10 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useSyncExternalStore } from 'react';
-import { subscribe, getState } from '../../state/runStore';
+import { useSyncExternalStore, useMemo } from 'react';
+import { subscribe, getSnapshot } from '../../state/runStore';
 
 export default function EvidenceByYear(){
-  const state = useSyncExternalStore(subscribe, ()=>({...getState()}));
-  const data = state.evidenceByYear;
+  const state = useSyncExternalStore(subscribe, getSnapshot);
+  const data = useMemo(() => state.evidenceByYear, [state.evidenceByYear]);
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{left:10,right:10,top:10,bottom:10}}>
