@@ -46,3 +46,6 @@ This file tells Codex **exactly how to work in this repo**: what to run, what to
 npm i
 npm run build
 npm test
+```
+
+Return your pull request summary under **Summary** and the test output under **Testing**.
