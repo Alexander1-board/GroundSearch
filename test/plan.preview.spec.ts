@@ -21,5 +21,7 @@ describe('Plan preview API', () => {
     const res = await request.post('/api/plan/preview').send({ brief }).expect(200);
     expect(() => ExecutionPlanSchema.parse(res.body)).not.toThrow();
     expect(res.body.steps.length).toBeGreaterThan(0);
+    const search = res.body.steps.find((s:any)=>s.action==='SEARCH');
+    expect(search?.params).toBeTypeOf('object');
   });
 });

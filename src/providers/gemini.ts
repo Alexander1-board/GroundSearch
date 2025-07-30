@@ -1,12 +1,14 @@
 import { LLMClient, MockLLMClient } from '../types/llm.js';
 import { fetchWithRetry } from '../lib/http.js';
+
 export function getGeminiClient(model: string): LLMClient {
-  if (!process.env.GEMINI_API_KEY) return new MockLLMClient('gemini', model);
+  const key = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_SECRET;
+  if (!key) return new MockLLMClient('gemini', model);
   return {
     provider: 'gemini',
     model,
     async generateJSON(prompt, schema, vars) {
-      const res = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + process.env.GEMINI_API_KEY, {
+      const res = await fetchWithRetry('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })

@@ -17,7 +17,7 @@ export const EvidenceSchema = z.object({
   include: z.boolean().default(true),
   reason: z.string().optional(),
   quant_scores: z.record(z.number()).optional(),
-  qual_notes: z.record(z.string()).optional(),
+  qual_notes: z.record(z.union([z.string(), z.number()])).optional(),
 });
 export type Evidence = z.infer<typeof EvidenceSchema>;
 
@@ -33,6 +33,7 @@ export const ActionStepSchema = z.object({
   action: z.enum(['SEARCH','FETCH','PARSE','SCREEN','COMPARE','SYNTHESISE']),
   params: z.record(z.any()).default({}),
   expects: z.string().default(''),
+  specialist_instructions: z.string().min(1).max(2000).optional(),
 });
 export type ActionStep = z.infer<typeof ActionStepSchema>;
 

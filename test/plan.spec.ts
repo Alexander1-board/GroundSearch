@@ -31,8 +31,15 @@ describe('Orchestrator Agent: Plan Generation', () => {
     expect(plan.steps.some(s => s.action === 'SEARCH')).toBe(true);
     expect(plan.steps.some(s => s.action === 'SCREEN')).toBe(true);
     expect(plan.steps[plan.steps.length - 1].action).toBe('SYNTHESISE');
-    
+
     expect(plan.rationale_summary).toBeTypeOf('string');
-    expect(plan.rationale_summary.length).toBeGreaterThan(10);
+    if(process.env.ALLOW_DEBUG_TRACES === 'true'){
+      expect(plan.rationale_summary.length).toBeGreaterThan(10);
+    }else{
+      expect(plan.rationale_summary).toBe('');
+    }
+
+    expect(plan.evaluation.success_criteria.length).toBeGreaterThan(0);
+    expect(plan.evaluation.risks.length).toBeGreaterThan(0);
   });
 });
