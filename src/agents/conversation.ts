@@ -10,12 +10,14 @@ export async function startSession(llm?: LLMClient){
   const cfg = await loadConfig();
   const sessionId = uuidv4();
   const client = llm || getLLM(cfg.default_provider as any, cfg.default_model);
-  const first = { role: 'system', content: cfg.interview_preprompt };
+  const first = { role: 'system', content: cfg.interview_preprompt + '\n' + INTERVIEW_PROMPT };
   await appendMessage(sessionId, first);
+  const greet = { role: 'assistant', content: 'Hello, what is your research objective?' };
+  await appendMessage(sessionId, greet);
   // Persist provider info for the session (not used yet)
   await appendMessage(sessionId, { role: 'meta', content: JSON.stringify({ provider: client.provider, model: client.model }) });
   logger.info('chat session started', { sessionId, provider: client.provider });
-  return { sessionId, firstMessage: first };
+  return { sessionId, firstMessage: greet };
 }
 
 export async function replySession(sessionId: string, userMsg: string, llm?: LLMClient){
@@ -23,10 +25,19 @@ export async function replySession(sessionId: string, userMsg: string, llm?: LLM
   const client = llm || getLLM(cfg.default_provider as any, cfg.default_model);
   await appendMessage(sessionId, { role: 'user', content: userMsg });
   const transcript = await getMessages(sessionId);
-  // simple mock: return outline when 3 messages reached
-  const outline = transcript.length > 3 ? { objective: transcript[1]?.content || 'Research objective' } : undefined;
-  const reply = { role: 'assistant', content: 'Acknowledged.' };
+  const outline: any = {};
+  for(const m of transcript){
+    if(m.role==='user' && !outline.objective){ outline.objective = m.content; }
+  }
+  let reply = { role: 'assistant', content: '' };
+  if(!outline.objective){
+    reply.content = 'What is the main research objective?';
+  }else{
+    reply.content = 'Thank you. Brief noted.';
+  }
   await appendMessage(sessionId, reply);
   logger.debug('chat reply', { sessionId, len: transcript.length });
-  return { reply, outline };
+  const out: any = { reply, outline };
+  if(process.env.ALLOW_DEBUG_TRACES==='true') out.rationale_summary = 'heuristic conversation';
+  return out;
 }
