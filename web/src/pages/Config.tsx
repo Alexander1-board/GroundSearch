@@ -2,124 +2,113 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const TOOLS = ['pubmed','arxiv','wolfram','openalex','mediawiki','leaks'];
+const SECRET_PROVIDERS = ['gemini','openai','anthropic','grok','ollama','ncbi','wolfram','openalex'];
 
 interface ProviderInfo { id: string; models: string[]; available: boolean; }
 
-interface UserConfig {
-  default_provider: string;
-  default_model: string;
-  interview_preprompt: string;
-  enabled_tools: string[];
-}
-
 export default function Config() {
   const nav = useNavigate();
-  const [cfg, setCfg] = useState<UserConfig | null>(null);
-  const [providers, setProviders] = useState<ProviderInfo[]>([]);
-  const [secretFlags, setSecretFlags] = useState<Record<string, boolean>>({});
-  const [secrets, setSecrets] = useState<Record<string, string>>({});
-  const [tab, setTab] = useState<'config' | 'secrets'>('config');
-  const [toast, setToast] = useState<string | null>(null);
+  const [activeTab,setActiveTab] = useState<'settings'|'secrets'>('settings');
+  const [providers,setProviders] = useState<ProviderInfo[]>([]);
 
-  useEffect(() => {
-    fetch('/api/config').then(r => r.json()).then(setCfg);
-    fetch('/api/providers').then(r => r.json()).then(d => setProviders(d.providers || []));
-    fetch('/api/config/secrets').then(r => r.json()).then(d => {
-      setSecretFlags(d.flags || {});
-      if(d.canEdit===false) setTab('config');
-    });
-  }, []);
+  const [provider,setProvider] = useState('');
+  const [model,setModel] = useState('');
+  const [interviewPreprompt,setInterviewPreprompt] = useState('');
+  const [enabledTools,setEnabledTools] = useState<string[]>([]);
 
-  if (!cfg) return <div>Loading...</div>;
+  const [secretFlags,setSecretFlags] = useState<Record<string,boolean>>({});
+  const [secrets,setSecrets] = useState<Record<string,string>>({});
 
-  const save = async () => {
-    await fetch('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) });
+  useEffect(()=>{(async()=>{
+    const cfg = await fetch('/api/config').then(r=>r.json());
+    setProvider(cfg.default_provider);
+    setModel(cfg.default_model);
+    setInterviewPreprompt(cfg.interview_preprompt);
+    setEnabledTools(cfg.enabled_tools);
+    const prov = await fetch('/api/providers').then(r=>r.json());
+    setProviders(prov.providers||[]);
+    const sec = await fetch('/api/config/secrets').then(r=>r.json());
+    setSecretFlags(sec.flags||{});
+  })();},[]);
+
+  const providerInfo = providers.find(p=>p.id===provider);
+  const models = providerInfo?.models||[];
+
+  const toggleTool = (t:string,on:boolean)=>{
+    setEnabledTools(on ? [...enabledTools,t] : enabledTools.filter(x=>x!==t));
+  };
+
+  const save = async()=>{
+    await fetch('/api/config',{method:'PUT',body:JSON.stringify({default_provider:provider,default_model:model,interview_preprompt:interviewPreprompt,enabled_tools:enabledTools})});
     nav('/');
   };
 
-  const testCreds = async () => {
-    const res = await fetch('/api/providers/test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: cfg.default_provider, model: cfg.default_model })
-    });
+  const testCreds = async()=>{
+    const res = await fetch('/api/providers/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider,model})});
     const data = await res.json();
-    if (data.ok) setToast('Credentials OK'); else setToast(data.error || 'Error');
-    setTimeout(() => setToast(null), 3000);
+    alert(data.ok ? 'Credentials OK' : data.error||'Error');
   };
 
-  const providerInfo = providers.find(p => p.id === cfg.default_provider);
-  const models = providerInfo?.models || [];
-  const toggleTool = (t: string, on: boolean) => {
-    const list = on ? [...cfg.enabled_tools, t] : cfg.enabled_tools.filter(x => x !== t);
-    setCfg({ ...cfg, enabled_tools: list });
+  const saveSecrets = async()=>{
+    await fetch('/api/config/secrets',{method:'PUT',body:JSON.stringify(secrets)});
+    const sec = await fetch('/api/config/secrets').then(r=>r.json());
+    setSecretFlags(sec.flags||{});
+    setSecrets({});
   };
 
   return (
-    <div className="p-4 space-y-2">
-      <h1 className="text-xl font-bold">Config</h1>
-      {toast && <div className="bg-green-200 p-2">{toast}</div>}
-      <div>
-        <label className="block">Provider
-          <select value={cfg.default_provider} onChange={e => {
-            const val = e.target.value;
-            const firstModel = providers.find(p => p.id === val)?.models[0] || '';
-            setCfg({ ...cfg, default_provider: val, default_model: firstModel });
-          }}>
-            {providers.map(p => <option key={p.id} value={p.id}>{p.id}</option>)}
-          </select>
-        </label>
-      </div>
-      <div>
-        <label className="block">Model
-          <select value={cfg.default_model} onChange={e => setCfg({ ...cfg, default_model: e.target.value })}>
-            {models.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </label>
-      </div>
-      <div>
-        <label className="block">Interview Preprompt</label>
-        <textarea value={cfg.interview_preprompt} onChange={e => setCfg({ ...cfg, interview_preprompt: e.target.value })} className="border w-full" rows={8}></textarea>
-        <div className="text-sm text-gray-500">{cfg.interview_preprompt.length} chars</div>
-      </div>
-      <div>
-        <label className="block font-semibold">Enabled Tools</label>
-        {TOOLS.map(t => (
-          <label key={t} className="block">
-            <input type="checkbox" checked={cfg.enabled_tools.includes(t)} onChange={e => toggleTool(t, e.target.checked)} /> {t}
-          </label>
-        ))}
-      </div>
-      <div className="space-x-2">
-        <button onClick={save} className="underline">Save</button>
-        <button onClick={testCreds} className="underline">Test Credentials</button>
+    <div className="p-4">
+      <h1 className="text-xl font-bold mb-4">Config</h1>
+      <div className="mb-4 border-b">
+        <button className={`px-4 py-2 mr-2 ${activeTab==='settings'? 'border-b-2 border-blue-600' : ''}`} onClick={()=>setActiveTab('settings')}>Settings</button>
+        <button className={`px-4 py-2 ${activeTab==='secrets'? 'border-b-2 border-blue-600' : ''}`} onClick={()=>setActiveTab('secrets')}>Secrets</button>
       </div>
 
-      {Object.keys(secretFlags).length > 0 && (
-        <div>
-          <div className="mt-4 flex space-x-4">
-            <button className="underline" onClick={()=>setTab('config')}>Config</button>
-            <button className="underline" onClick={()=>setTab('secrets')}>Secrets</button>
+      {activeTab==='settings' && (
+        <form onSubmit={e=>{e.preventDefault();save();}} className="max-w-lg">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Provider</label>
+            <select className="mt-1 block w-full border rounded p-2" value={provider} onChange={e=>{const val=e.target.value;setProvider(val);setModel(providers.find(p=>p.id===val)?.models[0]||'');}}>
+              {providers.map(p=>(<option key={p.id} value={p.id}>{p.id}</option>))}
+            </select>
           </div>
-          {tab === 'secrets' && (
-            <div className="space-y-2 mt-2">
-              {Object.keys(secretFlags).map(k => (
-                <label key={k} className="block">
-                  {k}: <input type="text" value={secrets[k]||''} onChange={e => setSecrets({ ...secrets, [k]: e.target.value })} className="border" />
-                  <span className="ml-2 text-sm">{secretFlags[k] ? 'Present' : 'Not set'}</span>
-                </label>
-              ))}
-              <button className="underline" onClick={async()=>{
-                await fetch('/api/config/secrets', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(secrets) });
-                const d = await fetch('/api/config/secrets').then(r=>r.json());
-                setSecretFlags(d.flags||{});
-                setSecrets({});
-                setToast('Secrets saved');
-                setTimeout(()=>setToast(null),3000);
-              }}>Save Secrets</button>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Model</label>
+            <select className="mt-1 block w-full border rounded p-2" value={model} onChange={e=>setModel(e.target.value)}>
+              {models.map(m=>(<option key={m} value={m}>{m}</option>))}
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Interview Preprompt</label>
+            <textarea rows={5} className="mt-1 block w-full border rounded p-2" value={interviewPreprompt} onChange={e=>setInterviewPreprompt(e.target.value)}></textarea>
+            <span className="text-xs text-gray-500">{interviewPreprompt.length} chars</span>
+          </div>
+          <div className="mb-4">
+            <span className="block text-sm font-medium text-gray-700 mb-1">Enabled Tools</span>
+            {TOOLS.map(t=> (
+              <label key={t} className="block">
+                <input type="checkbox" className="mr-2" checked={enabledTools.includes(t)} onChange={e=>toggleTool(t,e.target.checked)} />{t}
+              </label>
+            ))}
+          </div>
+          <div className="space-x-2">
+            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+            <button type="button" onClick={testCreds} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Test Credentials</button>
+          </div>
+        </form>
+      )}
+
+      {activeTab==='secrets' && (
+        <form onSubmit={e=>{e.preventDefault();saveSecrets();}} className="max-w-lg space-y-4">
+          {SECRET_PROVIDERS.map(p=>(
+            <div key={p} className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">{p} API Key</label>
+              <input type="password" placeholder="••••••" className="mt-1 block w-full border rounded p-2" value={secrets[p]||''} onChange={e=>setSecrets({...secrets,[p]:e.target.value})} />
+              <span className={`text-xs ml-2 ${secretFlags[p]?'text-green-600':'text-red-600'}`}>{secretFlags[p]?'Present':'Not set'}</span>
             </div>
-          )}
-        </div>
+          ))}
+          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Secrets</button>
+        </form>
       )}
     </div>
   );
