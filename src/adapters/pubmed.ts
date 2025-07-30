@@ -32,7 +32,7 @@ async function loadFixture(limit: number): Promise<RecordLite[]> {
 }
 
 export async function searchPubMed(term: string, retmax = 50, retstart = 0): Promise<RecordLite[]> {
-  const apiKey = process.env.NCBI_API_KEY;
+  const apiKey = process.env.NCBI_API_KEY || process.env.NCBI_API_KEY_SECRET;
   if (!apiKey) return loadFixture(retmax);
 
   try {

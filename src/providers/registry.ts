@@ -26,10 +26,11 @@ export function getLLM(provider: ProviderId, model: string): LLMClient {
 
 export function availableProviders(): ProviderId[] {
   const list: ProviderId[] = ['mock'];
-  if (process.env.OPENAI_API_KEY) list.push('openai');
-  if (process.env.ANTHROPIC_API_KEY) list.push('anthropic');
-  if (process.env.GEMINI_API_KEY) list.push('gemini');
-  if (process.env.GROK_API_KEY) list.push('grok');
+  const has = (k: string) => process.env[k] || process.env[`${k}_SECRET`];
+  if (has('OPENAI_API_KEY')) list.push('openai');
+  if (has('ANTHROPIC_API_KEY')) list.push('anthropic');
+  if (has('GEMINI_API_KEY')) list.push('gemini');
+  if (has('GROK_API_KEY')) list.push('grok');
   if (process.env.OLLAMA_BASE_URL) list.push('ollama');
   return list;
 }

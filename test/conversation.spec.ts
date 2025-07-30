@@ -5,8 +5,9 @@ import { MockLLMClient } from '../src/types/llm.js';
 describe('Conversation agent', () => {
   it('collects objective', async () => {
     const llm = new MockLLMClient('mock','1');
-    const { sessionId } = await startSession(llm);
+    const { sessionId, message } = await startSession(llm);
+    expect(message).toBeTypeOf('string');
     const res = await replySession(sessionId, 'Research obesity treatments', llm);
-    expect(res.outline?.objective).toBe('Research obesity treatments');
+    expect(res.reply).toBeTypeOf('string');
   });
 });

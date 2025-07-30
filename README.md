@@ -10,13 +10,13 @@ This project is a minimal, working TypeScript/Node scaffold for AutoResearch, a 
     ```
 
 2.  **Set up environment variables:**
-    Copy the example environment file. The app will work in a mocked mode without API keys, using test fixtures.
+    Copy the example environment file. The app will work in a mocked mode without API keys, using the fixtures under `test/fixtures`.
     ```bash
     cp .env.example .env
     ```
-    To make live API calls, fill in `WOLFRAM_APPID` and `NCBI_API_KEY`. `OPENALEX_EMAIL` is optional.
+    To make live API calls, fill in `WOLFRAM_APPID` and `NCBI_API_KEY`. `OPENALEX_EMAIL` is optional.  Provider API keys can be stored in `.data/secrets.json` via the Config page.
 
-    The app reads additional preferences from `.data/user-config.json`. You can change the default LLM provider, model, and the `interview_preprompt` used to guide the chat interview.
+    The app reads additional preferences from `.data/user-config.json`. You can change the default provider/model, the `interview_preprompt`, and enabled tools from the Config page.
 
     ```json
     {
@@ -37,6 +37,12 @@ This project is a minimal, working TypeScript/Node scaffold for AutoResearch, a 
     ```bash
     npm test
     ```
+
+5. **Production server:**
+   ```bash
+   npm run web:build && npm run dev
+   ```
+   This serves the prebuilt UI from `dist` at `http://localhost:3000`.
 
 ## API Demo Flow (using `curl` and `jq`)
 
@@ -125,10 +131,11 @@ This will print the final JSON report, which contains the markdown and a structu
 
 ### 5. Explore Stored Runs
 
-List all runs with basic status:
+List all runs with basic status and timestamps:
 
 ```bash
 curl -s http://localhost:3000/api/runs | jq .
+# → [ { "runId":"abc", "status":"complete", "startedAt":1680000000000, "updatedAt":1680000005000 } ]
 ```
 
 Retrieve the saved execution plan for a run:
@@ -147,7 +154,10 @@ curl -s -X POST http://localhost:3000/api/chat/$SESSION_ID/reply -d '{"message":
 curl -N http://localhost:3000/api/chat/$SESSION_ID/stream
 ```
 ## Run the UI
-- Development: `npm run dev:all` and open http://localhost:5173 (proxy to backend)
-- Production: `npm run build && npm run web:build && npm start` then open http://localhost:3000
+- Development: `npm run dev:all` and open http://localhost:5173 (proxy to the backend)
+- Production: `npm run web:build && npm run dev` then open http://localhost:3000
+Artifacts for each run are stored under `./runs/<runId>/` alongside the execution plan, evidence and final report.
 The Run Dashboard at `/run/:id` shows live progress with collapsible charts.
+
+Without API keys the app falls back to fixture data, so it can run entirely offline. Set `WOLFRAM_APPID` and `NCBI_API_KEY` to enable live searches.
 

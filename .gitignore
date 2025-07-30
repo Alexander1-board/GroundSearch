@@ -25,6 +25,7 @@ dist-ssr
 node_modules/
 dist/
 runs/
+.data/
 .env
 .env.*
 !.env.example

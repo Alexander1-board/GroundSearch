@@ -5,39 +5,39 @@ import { LLMClient } from '../types/llm.js';
 import { getLLM } from '../providers/registry.js';
 import { INTERVIEW_PROMPT } from '../spec/prompts.js';
 import { logger } from '../lib/logger.js';
+import { z } from 'zod';
+import { ResearchBriefSchema } from '../spec/schemas.js';
+
+const OutlineSchema = ResearchBriefSchema.partial();
+const ReplySchema = z.object({ reply: z.string(), outline: OutlineSchema });
 
 export async function startSession(llm?: LLMClient){
   const cfg = await loadConfig();
   const sessionId = uuidv4();
   const client = llm || getLLM(cfg.default_provider as any, cfg.default_model);
-  const first = { role: 'system', content: cfg.interview_preprompt + '\n' + INTERVIEW_PROMPT };
-  await appendMessage(sessionId, first);
-  const greet = { role: 'assistant', content: 'Hello, what is your research objective?' };
-  await appendMessage(sessionId, greet);
-  // Persist provider info for the session (not used yet)
+  const pre = cfg.interview_preprompt;
+  const systemMsg = { role: 'system', content: pre + '\n' + INTERVIEW_PROMPT };
+  await appendMessage(sessionId, systemMsg);
   await appendMessage(sessionId, { role: 'meta', content: JSON.stringify({ provider: client.provider, model: client.model }) });
+  const { reply, outline } = await client.generateJSON(systemMsg.content, ReplySchema, {
+    mockData: { reply: 'Hello, what is your research objective?', outline: {} }
+  });
+  const firstMsg = { role: 'assistant', content: reply, outline } as any;
+  await appendMessage(sessionId, firstMsg);
   logger.info('chat session started', { sessionId, provider: client.provider });
-  return { sessionId, firstMessage: greet };
+  return { sessionId, message: reply, outline };
 }
 
-export async function replySession(sessionId: string, userMsg: string, llm?: LLMClient){
+export async function replySession(sessionId: string, userMsg: string, llm?: LLMClient, preprompt?: string){
   const cfg = await loadConfig();
   const client = llm || getLLM(cfg.default_provider as any, cfg.default_model);
+  const pre = preprompt || cfg.interview_preprompt;
   await appendMessage(sessionId, { role: 'user', content: userMsg });
   const transcript = await getMessages(sessionId);
-  const outline: any = {};
-  for(const m of transcript){
-    if(m.role==='user' && !outline.objective){ outline.objective = m.content; }
-  }
-  let reply = { role: 'assistant', content: '' };
-  if(!outline.objective){
-    reply.content = 'What is the main research objective?';
-  }else{
-    reply.content = 'Thank you. Brief noted.';
-  }
-  await appendMessage(sessionId, reply);
+  const conv = transcript.filter(m=>m.role!=='meta').map(m=>`${m.role.toUpperCase()}: ${m.content}`).join('\n');
+  const prompt = pre + '\n' + INTERVIEW_PROMPT + '\n\n' + conv;
+  const out = await client.generateJSON(prompt, ReplySchema, { mockData: { reply: 'Ok.', outline: { objective: userMsg } } });
+  await appendMessage(sessionId, { role: 'assistant', content: out.reply, outline: out.outline } as any);
   logger.debug('chat reply', { sessionId, len: transcript.length });
-  const out: any = { reply, outline };
-  if(process.env.ALLOW_DEBUG_TRACES==='true') out.rationale_summary = 'heuristic conversation';
   return out;
 }
