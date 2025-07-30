@@ -26,16 +26,14 @@ This project is a minimal, working TypeScript/Node scaffold for AutoResearch, a 
     }
     ```
 
-3.  **Run the development server:**
+3.  **Run the development servers (API + UI):**
     ```bash
-    npm run dev
+    npm run dev:all
     ```
-    The API server will start on `http://localhost:3000` (or the port specified in your `.env` file). All run data will be persisted to the `./runs` directory. Visit `http://localhost:3000/` for a minimal UI showing recent runs.
+    This starts the API server on `http://localhost:3000` and the Vite UI on `http://localhost:5173` (proxying API requests).
+    If you only need the API server, run `npm run dev` instead.
 
-4. **Run the browser UI:**
-    A very small static page is served from the project root. After starting the dev server, open [http://localhost:3000](http://localhost:3000) in your browser to view recent runs.
-
-5.  **Run tests:**
+4.  **Run tests:**
     ```bash
     npm test
     ```
@@ -149,7 +147,7 @@ curl -s -X POST http://localhost:3000/api/chat/$SESSION_ID/reply -d '{"message":
 curl -N http://localhost:3000/api/chat/$SESSION_ID/stream
 ```
 ## Run the UI
-- Development: `npm run web:dev` then open http://localhost:5173 (proxy to backend)
-- Production: `npm run web:build && npm run dev` then open http://localhost:3000
+- Development: `npm run dev:all` and open http://localhost:5173 (proxy to backend)
+- Production: `npm run build && npm run web:build && npm start` then open http://localhost:3000
 The Run Dashboard at `/run/:id` shows live progress with collapsible charts.
 
