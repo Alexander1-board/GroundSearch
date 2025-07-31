@@ -15,7 +15,6 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(process.cwd()));
 app.use(express.static(path.resolve(process.cwd(), 'web/dist')));
 
 app.use((req: Request, _res: Response, next: NextFunction) => {

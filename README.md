@@ -40,7 +40,7 @@ This project is a minimal, working TypeScript/Node scaffold for AutoResearch, a 
 
 5. **Production server:**
    ```bash
-   npm run web:build && npm run dev
+   npm start
    ```
    This serves the prebuilt UI from `dist` at `http://localhost:3000`.
 
@@ -155,7 +155,7 @@ curl -N http://localhost:3000/api/chat/$SESSION_ID/stream
 ```
 ## Run the UI
 - Development: `npm run dev:all` and open http://localhost:5173 (proxy to the backend)
-- Production: `npm run web:build && npm run dev` then open http://localhost:3000
+- Production: `npm start` then open http://localhost:3000
 Artifacts for each run are stored under `./runs/<runId>/` alongside the execution plan, evidence and final report.
 The Run Dashboard at `/run/:id` shows live progress with collapsible charts.
 
