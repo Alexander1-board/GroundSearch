@@ -7,11 +7,11 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/src/server.js",
+    "start": "npm run web:build && node dist/src/server.js",
     "test": "vitest",
     "dev:all": "concurrently \"npm run dev\" \"npm run web:dev\"",
     "web:dev": "vite --config web/vite.config.ts",
-    "web:build": "vite build --config web/vite.config.ts"
+    "web:build": "cd web && npx vite build"
   },
   "dependencies": {
     "cors": "^2.8.5",
